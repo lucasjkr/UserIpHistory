@@ -72,12 +72,13 @@ class UserIps:
             ip = login['IPAddress']
             geo = self.geoip(ip)
 
-            login['ip_continent'] = geo['continent']
-            login['ip_country'] = geo['country']
-            login['ip_city'] = geo['city']
-            login['ip_state'] = geo['subdivision']
+            login['continent'] = geo['continent']
+            login['country'] = geo['country']
+            login['city'] = geo['city']
+            login['state'] = geo['subdivision']
             login['asn_id'] = geo['asn_id']
             login['asn_network'] = geo['asn_network']
+            login['asn_org'] = geo['asn_org']
             if login not in self.result:
                 self.result.append(login)
 
@@ -87,12 +88,13 @@ class UserIps:
             ip = login['IPAddress']
             geo = self.geoip(ip)
 
-            login['ip_continent'] = geo['continent']
-            login['ip_country'] = geo['country']
-            login['ip_city'] = geo['city']
-            login['ip_state'] = geo['subdivision']
+            login['continent'] = geo['continent']
+            login['country'] = geo['country']
+            login['city'] = geo['city']
+            login['state'] = geo['subdivision']
             login['asn_id'] = geo['asn_id']
             login['asn_network'] = geo['asn_network']
+            login['asn_org'] = geo['asn_org']
             if login not in self.result:
                 self.result.append(login)
 
