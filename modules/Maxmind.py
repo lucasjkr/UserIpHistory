@@ -37,7 +37,7 @@ class Maxmind:
             'accuracy': self.maxmind_geo()['location']['accuracy_radius'],
 
             'asn_id': self.maxmind_asn()['autonomous_system_number'],
-            'an_org': self.maxmind_asn()['autonomous_system_organization'],
+            'asn_org': self.maxmind_asn()['autonomous_system_organization'],
             'asn_network': self.maxmind_asn()['network']
         }
 
