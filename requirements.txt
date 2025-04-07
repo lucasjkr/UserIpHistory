@@ -1,0 +1,5 @@
+geoip2==5.0.1
+msal==1.31.1
+openpyxl==3.1.5
+python-dotenv==1.1.0
+Requests==2.32.3
