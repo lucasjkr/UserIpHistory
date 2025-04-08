@@ -1,5 +1,6 @@
 import argparse
 from openpyxl import Workbook
+from modules import Dict2Excel
 from modules import MsGraphAuthenticator
 from modules import Maxmind
 from dotenv import dotenv_values
@@ -19,41 +20,42 @@ class UserIps:
         return MsGraphAuthenticator.graph_bearer_token(
             tenant_id=self.config['TENANT_ID'],
             client_id=self.config['CLIENT_ID'],
-            secret=self.config['SECRET'],
+            client_secret=self.config['SECRET'],
             scope=["https://graph.microsoft.com/.default"])
 
     def user_hunting_query(self, user):
         hunt = {
             'Query': f"""SigninLogs
                  | where UserPrincipalName == "{user}"
-                 | where TimeGenerated > ago(3d)
-                 | distinct UserPrincipalName, IPAddress, ResultSignature
-                 """
-        }
-
-        headers= {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + self.bearer_token()
-        }
-
-        response = requests.post("https://graph.microsoft.com/v1.0/security/runHuntingQuery",
-            headers=headers,
-            data=json.dumps(hunt)
-        ).json()
-        return response
-
-    def ip_hunting_query(self, ip):
-        hunt = {
-            'Query': f"""SigninLogs
-                 | where IPAddress == "{ip}"
-                 | where TimeGenerated > ago(3d)
+                 | where TimeGenerated > ago(900d)
                  | distinct UserPrincipalName, IPAddress
                  """
         }
 
         headers= {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + self.bearer_token()
+            'Authorization': self.bearer_token()
+        }
+
+        response = requests.post("https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+            headers=headers,
+            data=json.dumps(hunt)
+        )
+
+        return response.json()
+
+    def ip_hunting_query(self, ip):
+        hunt = {
+            'Query': f"""SigninLogs
+                 | where IPAddress == "{ip}"
+                 | where TimeGenerated > ago(90d)
+                 | distinct UserPrincipalName, IPAddress
+                 """
+        }
+
+        headers= {
+            'Content-Type': 'application/json',
+            'Authorization': self.bearer_token()
         }
 
         response = requests.post("https://graph.microsoft.com/v1.0/security/runHuntingQuery",
@@ -63,40 +65,46 @@ class UserIps:
         return response
 
     def geoip(self, ip):
-        mm = Maxmind.Maxmind()
-        return mm.all(ip)
+        return Maxmind.geolookup(ip)
 
     def ips_by_user(self, user):
-        logins = self.user_hunting_query(user)['results']
-        for login in logins:
-            ip = login['IPAddress']
-            geo = self.geoip(ip)
+        logins = self.user_hunting_query(user)
 
-            login['continent'] = geo['continent']
-            login['country'] = geo['country']
-            login['city'] = geo['city']
-            login['state'] = geo['subdivision']
-            login['asn_id'] = geo['asn_id']
-            login['asn_network'] = geo['asn_network']
-            login['asn_org'] = geo['asn_org']
-            if login not in self.result:
-                self.result.append(login)
+        if 'results' not in logins:
+            pass
+        else:
+            for login in logins['results']:
+                ip = login['IPAddress']
+                geo = self.geoip(ip)
+
+                login['continent'] = geo['continent']
+                login['country'] = geo['country']
+                login['city'] = geo['city']
+                login['state'] = geo['subdivision']
+                login['asn_id'] = geo['asn_id']
+                login['asn_network'] = geo['asn_network']
+                login['asn_org'] = geo['asn_org']
+                if login not in self.result:
+                    self.result.append(login)
 
     def users_by_ip(self, ip):
-        logins = self.ip_hunting_query(ip)['results']
-        for login in logins:
-            ip = login['IPAddress']
-            geo = self.geoip(ip)
+        logins = self.ip_hunting_query(ip)
+        if 'results' not in logins:
+            pass
+        else:
+            for login in logins['results']:
+                ip = login['IPAddress']
+                geo = self.geoip(ip)
 
-            login['continent'] = geo['continent']
-            login['country'] = geo['country']
-            login['city'] = geo['city']
-            login['state'] = geo['subdivision']
-            login['asn_id'] = geo['asn_id']
-            login['asn_network'] = geo['asn_network']
-            login['asn_org'] = geo['asn_org']
-            if login not in self.result:
-                self.result.append(login)
+                login['continent'] = geo['continent']
+                login['country'] = geo['country']
+                login['city'] = geo['city']
+                login['state'] = geo['subdivision']
+                login['asn_id'] = geo['asn_id']
+                login['asn_network'] = geo['asn_network']
+                login['asn_org'] = geo['asn_org']
+                if login not in self.result:
+                    self.result.append(login)
 
     def process_users_file(self):
         # create empty list to insert all results into
@@ -128,40 +136,40 @@ class UserIps:
                 print(f"\rRow: {i}", end='', flush=True)
                 self.users_by_ip(ip)
 
-    def write_to_excel(self, results):
-        workbook = Workbook()
-
-        for result in results:
-            if result is None:
-                continue
-            else:
-                # If sheet named 'Data' does not exist, create it
-                if 'Data' not in workbook:
-                    worksheet = workbook.create_sheet(title='Data')
-                    worksheet.append([key for key in result])
-
-                # Insert the row of values that need to be inserted (action happens whether header row was created or not
-                if result is not None:
-                    worksheet = workbook['Data']
-                    worksheet.append(list(result.values()))
-
-        # format the resulting spreadsheet
-        for column in worksheet.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
-                except:
-                    pass
-            adjusted_width = (max_length + 2) * 1.0
-            worksheet.column_dimensions[column_letter].width = adjusted_width
-
-        # Freeze top rows
-        worksheet.freeze_panes = 'A2'
-        workbook.remove(workbook['Sheet'])
-        workbook.save("output.xlsx")
+    # def write_to_excel(self, results):
+    #     workbook = Workbook()
+    #
+    #     for result in results:
+    #         if result is None:
+    #             continue
+    #         else:
+    #             # If sheet named 'Data' does not exist, create it
+    #             if 'Data' not in workbook:
+    #                 worksheet = workbook.create_sheet(title='Data')
+    #                 worksheet.append([key for key in result])
+    #
+    #             # Insert the row of values that need to be inserted (action happens whether header row was created or not
+    #             if result is not None:
+    #                 worksheet = workbook['Data']
+    #                 worksheet.append(list(result.values()))
+    #
+    #     # format the resulting spreadsheet
+    #     for column in worksheet.columns:
+    #         max_length = 0
+    #         column_letter = column[0].column_letter
+    #         for cell in column:
+    #             try:
+    #                 if len(str(cell.value)) > max_length:
+    #                     max_length = len(cell.value)
+    #             except:
+    #                 pass
+    #         adjusted_width = (max_length + 2) * 1.0
+    #         worksheet.column_dimensions[column_letter].width = adjusted_width
+    #
+    #     # Freeze top rows
+    #     worksheet.freeze_panes = 'A2'
+    #     workbook.remove(workbook['Sheet'])
+    #     workbook.save("output.xlsx")
 
     def main(self):
         if self.file is not None:
@@ -177,8 +185,8 @@ class UserIps:
             print("No results found.")
         else:
             # write results to a text file
-            self.write_to_excel(self.result)
-
+            # self.write_to_excel(self.result)
+            Dict2Excel.write_to_excel(self.result)
 
 if __name__ == "__main__":
     test = UserIps()
