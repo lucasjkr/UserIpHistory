@@ -1,25 +1,29 @@
-import logging, msal
+import requests, json
 
-def graph_bearer_token (tenant_id, client_id, secret, scope):
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority= "https://login.microsoftonline.com/" + tenant_id,
-        client_credential=secret,
-    )
+def graph_bearer_token (tenant_id, client_id, client_secret, scope):
+    # Construct the token endpoint URL
+    token_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
 
-    # Firstly, look up a token from cache
-    # Since we are looking for token for the current app, NOT for an end user,
-    # notice we give account parameter as None.
-    result = app.acquire_token_silent(scope, account=None)
-    if not result:
-        logging.info("No suitable token exists in cache. Let's get a new one from AAD.")
-        result = app.acquire_token_for_client(scopes=scope)
+    # Prepare the data for the POST request
+    data = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'scope': scope,
+        'grant_type': 'client_credentials'
+    }
 
-    if "access_token" in result:
-        logging.info("Authentication succeeded. Token acquired")
-        return result["access_token"]
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
 
+    # Make the POST request to obtain the token
+    response = requests.post(token_url, data=data, headers=headers)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        token = response.json().get('access_token')
+        return f'Bearer {token}'
     else:
-        logging.critical("Authentication failed: " + result.get("error_description", "No error description available"))
-        raise Exception(
-            "Authentication failed: " + result.get("error_description", "No error description available"))
+        print(f'Failed to obtain token: {response.status_code}')
+        print(response.json())
+        exit()
