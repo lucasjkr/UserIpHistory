@@ -1,56 +1,67 @@
 import geoip2.database, json
 
-class Maxmind:
+def __maxmind_geo(ip):
+    reader = geoip2.database.Reader('sources/GeoLite2-City_20250131/GeoLite2-City.mmdb', locales="[en]")
+    return reader.city(ip).to_dict()
 
-    def __init__(self):
-        pass
+def __maxmind_asn(ip):
+    reader = geoip2.database.Reader('sources/GeoLite2-ASN_20250204/GeoLite2-ASN.mmdb')
+    return reader.asn(ip).to_dict()
 
-    def maxmind_geo(self):
-        reader = geoip2.database.Reader('sources/GeoLite2-City_20250131/GeoLite2-City.mmdb', locales="[en]")
-        return reader.city(self.ip).to_dict()
+def geolookup(ip):
 
-    def maxmind_asn(self):
-        reader = geoip2.database.Reader('sources/GeoLite2-ASN_20250204/GeoLite2-ASN.mmdb')
-        return reader.asn(self.ip).to_dict()
+    result = {
+        'ip': ip,
+        'continent': "",
+        'country': "",
+        'subdivision': "",
+        'city': "",
+        'postal_code': "",
+        'asn_id': "",
+        'asn_org': "",
+        'asn_network': ""
+    }
 
-    def all(self, ip):
-        self.ip = ip
-        return {
-            'entry':  ip,
-            'continent_code': self.maxmind_geo()['continent']['code'],
-            'continent': self.maxmind_geo()['continent']['names']['en'],
+    try:
+        geocity = __maxmind_geo(ip)
+        if 'continent' in geocity:
+            result['continent'] = geocity['continent']['names']['en']
 
-            'country_code': self.maxmind_geo()['country']['iso_code'],
-            'country': self.maxmind_geo()['country']['names']['en'],
+        if 'country' in geocity:
+            result['country'] = geocity['country']['names']['en']
 
-            'registered_country_code': self.maxmind_geo()['registered_country']['iso_code'],
-            'registered_country': self.maxmind_geo()['registered_country']['names']['en'],
+        if 'subdivision' in geocity:
+            result['subdivision'] = geocity['subdivisions'][0]['names']['en']
 
-            'subdivision': self.maxmind_geo()['subdivisions'][0]['names']['en'],
+        if 'city' in geocity:
+            result['city'] = geocity['city']['names']['en']
 
-            'city': self.maxmind_geo()['city']['names']['en'],
-            'postal': self.maxmind_geo()['postal']['code'],
+        if 'postal' in geocity:
+            result['postal_code'] = geocity['postal']['code']
 
-            'timezone': self.maxmind_geo()['location']['time_zone'],
-            'longitude': self.maxmind_geo()['location']['longitude'],
-            'latitude': self.maxmind_geo()['location']['latitude'],
-            'accuracy': self.maxmind_geo()['location']['accuracy_radius'],
+    except Exception:
+        result['country'] = "NOT FOUND"
 
-            'asn_id': self.maxmind_asn()['autonomous_system_number'],
-            'asn_org': self.maxmind_asn()['autonomous_system_organization'],
-            'asn_network': self.maxmind_asn()['network']
-        }
+    try:
+        asn = __maxmind_asn(ip)
+        result['asn_id'] = asn['autonomous_system_number']
+        result['asn_org'] = asn['autonomous_system_organization']
+        result['asn_network'] = asn['network']
+    except Exception:
+        result['asn_org'] = "NOT FOUND"
+
+    return result
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
 
-    maxmind = Maxmind()
     parser.add_argument('ip',
                         nargs='?',
                         help="IP address")
 
     arg = parser.parse_args()
-    result = maxmind.all(arg.ip)
+
+    result = geolookup(arg.ip)
 
     print(json.dumps(result, indent=4))
