@@ -15,6 +15,7 @@ def geolookup(ip):
         'continent': "",
         'country': "",
         'subdivision': "",
+        'sub_abbr': "",
         'city': "",
         'postal_code': "",
         'asn_id': "",
@@ -32,6 +33,9 @@ def geolookup(ip):
 
         if 'subdivisions' in geocity:
             result['subdivision'] = geocity['subdivisions'][0]['names']['en']
+
+        if 'subdivisions' in geocity:
+            result['sub_abbr'] = geocity['subdivisions'][0]['iso_code']
 
         if 'city' in geocity:
             result['city'] = geocity['city']['names']['en']
