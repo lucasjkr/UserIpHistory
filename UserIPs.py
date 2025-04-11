@@ -28,9 +28,9 @@ class UserIps:
         hunt = {
             'Query': f"""SigninLogs
                  | where UserPrincipalName == "{user}"
-                 | where TimeGenerated > ago(900d)
                  | distinct UserPrincipalName, IPAddress
-                 """
+                 """,
+            'Timespan': "P180D"
         }
 
         headers= {
@@ -49,9 +49,9 @@ class UserIps:
         hunt = {
             'Query': f"""SigninLogs
                  | where IPAddress == "{ip}"
-                 | where TimeGenerated > ago(90d)
                  | distinct UserPrincipalName, IPAddress
-                 """
+                 """,
+            'Timespan': "P180D"
         }
 
         headers= {
