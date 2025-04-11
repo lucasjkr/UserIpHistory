@@ -23,12 +23,13 @@ class UserHistory:
             scope=["https://graph.microsoft.com/.default"])
 
     def user_hunting_query(self, user):
+        print("hunt")
         hunt = {
             'Query': f"""SigninLogs
                  | where UserPrincipalName == "{user}"
-                 | where TimeGenerated > ago(90d)
                  | project TimeGenerated, UserDisplayName, UserPrincipalName, IPAddress, Identity, AppDisplayName, ResultType, ResultDescription, ResultSignature, AuthenticationDetails, DeviceDetail, MfaDetail, IsInteractive, Status, UserAgent
-                 """
+                 """,
+            'Timespan': "P180D"
         }
 
         headers= {
@@ -51,8 +52,29 @@ class UserHistory:
             pass
         else:
             for login in logins['results']:
-                ip = login['IPAddress']
-                geo = self.geoip(ip)
+                ip = login.get('IPAddress', "")
+
+                if ip != "":
+                    geo = self.geoip(ip)
+                else:
+                    geo = dict()
+
+                login['TimeGenerated'] = login.get('TimeGenerated', '')
+                login['UserDisplayName'] = login.get('UserDisplayName', '')
+                login['UserPrincipalName'] = login.get('UserPrincipalName', '')
+                login['IPAddress'] = login.get('IPAddress', '')
+                login['Identity'] = login.get('Identity', '')
+                login['AppDisplayName'] = login.get('AppDisplayName', '')
+                login['ResultType'] = login.get('ResultType', '')
+                login['ResultDescription'] = login.get('ResultDescription', '')
+                login['AuthenticationDetails'] = login.get('AuthenticationDetails', '')
+                login['DeviceDetail'] = login.get('DeviceDetail', '')
+                login['MfaDetail'] = login.get('MfaDetail', '')
+                login['MfaDetail'] = login.get('MfaDetail', '')
+                login['IsInteractive'] = login.get('IsInteractive', '')
+                login['Status'] = login.get('Status', '')
+                login['UserAgent'] = login.get('UserAgent', '')
+
 
                 login['continent'] = geo['continent']
                 login['country'] = geo['country']
@@ -74,7 +96,7 @@ class UserHistory:
             for user in users:
                 # print which line of input you're on:
                 i = i + 1
-                print(f"\rRow: {i}", end='', flush=True)
+                print(f"\rRow: {i} - user {user}", end='', flush=True)
                 self.ips_by_user(user)
 
     def main(self):
