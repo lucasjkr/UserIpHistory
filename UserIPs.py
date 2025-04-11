@@ -1,9 +1,10 @@
 import argparse
 from openpyxl import Workbook
-from modules import Dict2Excel
+from modules import ListOfDicts2Excel
 from modules import MsGraphAuthenticator
 from modules import Maxmind
 from dotenv import dotenv_values
+from pathlib import Path
 import requests
 import json
 
@@ -80,7 +81,7 @@ class UserIps:
                 login['continent'] = geo['continent']
                 login['country'] = geo['country']
                 login['city'] = geo['city']
-                login['state'] = geo['subdivision']
+                login['state'] = geo['state']
                 login['asn_id'] = geo['asn_id']
                 login['asn_network'] = geo['asn_network']
                 login['asn_org'] = geo['asn_org']
@@ -99,7 +100,7 @@ class UserIps:
                 login['continent'] = geo['continent']
                 login['country'] = geo['country']
                 login['city'] = geo['city']
-                login['state'] = geo['subdivision']
+                login['state'] = geo['state']
                 login['asn_id'] = geo['asn_id']
                 login['asn_network'] = geo['asn_network']
                 login['asn_org'] = geo['asn_org']
@@ -136,57 +137,27 @@ class UserIps:
                 print(f"\rRow: {i}", end='', flush=True)
                 self.users_by_ip(ip)
 
-    # def write_to_excel(self, results):
-    #     workbook = Workbook()
-    #
-    #     for result in results:
-    #         if result is None:
-    #             continue
-    #         else:
-    #             # If sheet named 'Data' does not exist, create it
-    #             if 'Data' not in workbook:
-    #                 worksheet = workbook.create_sheet(title='Data')
-    #                 worksheet.append([key for key in result])
-    #
-    #             # Insert the row of values that need to be inserted (action happens whether header row was created or not
-    #             if result is not None:
-    #                 worksheet = workbook['Data']
-    #                 worksheet.append(list(result.values()))
-    #
-    #     # format the resulting spreadsheet
-    #     for column in worksheet.columns:
-    #         max_length = 0
-    #         column_letter = column[0].column_letter
-    #         for cell in column:
-    #             try:
-    #                 if len(str(cell.value)) > max_length:
-    #                     max_length = len(cell.value)
-    #             except:
-    #                 pass
-    #         adjusted_width = (max_length + 2) * 1.0
-    #         worksheet.column_dimensions[column_letter].width = adjusted_width
-    #
-    #     # Freeze top rows
-    #     worksheet.freeze_panes = 'A2'
-    #     workbook.remove(workbook['Sheet'])
-    #     workbook.save("output.xlsx")
-
     def main(self):
+
         if self.file is not None:
             self.process_users_file()
+            output = f"{Path(self.file).stem}.xlsx"
         elif self.user is not None:
             self.ips_by_user(self.user)
+            output = f"{self.user}.xlsx"
         elif self.ip_file is not None:
+            output = f"{Path(self.ip_file).stem}.xlsx"
             self.process_ip_file()
         elif self.ip is not None:
+            output = f"{str(self.ip).replace(".", "-").replace(":", "_")}.xlsx"
             self.users_by_ip(self.ip)
-
+        # full_history_by_user
         if len(self.result) == 0:
             print("No results found.")
         else:
             # write results to a text file
             # self.write_to_excel(self.result)
-            Dict2Excel.write_to_excel(self.result)
+            ListOfDicts2Excel.write_to_excel(self.result, output)
 
 if __name__ == "__main__":
     test = UserIps()
@@ -208,6 +179,7 @@ if __name__ == "__main__":
                       nargs='?',
                       default=None,
                       help="IP list to lookup sign-ins from")
+
 
     arg = args.parse_args()
     if arg.user:

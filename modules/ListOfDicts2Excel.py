@@ -1,6 +1,6 @@
 from openpyxl import Workbook
 
-def write_to_excel(results):
+def write_to_excel(results, output_file):
     workbook = Workbook()
 
     for result in results:
@@ -33,4 +33,4 @@ def write_to_excel(results):
     # Freeze top rows
     worksheet.freeze_panes = 'A2'
     workbook.remove(workbook['Sheet'])
-    workbook.save("output.xlsx")
+    workbook.save(output_file)
