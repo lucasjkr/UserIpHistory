@@ -1,11 +1,11 @@
 import geoip2.database, json
 
 def __maxmind_geo(ip):
-    reader = geoip2.database.Reader('sources/GeoLite2-City_20250131/GeoLite2-City.mmdb', locales="[en]")
+    reader = geoip2.database.Reader('sources/GeoLite2/GeoLite2-City.mmdb', locales="[en]")
     return reader.city(ip).to_dict()
 
 def __maxmind_asn(ip):
-    reader = geoip2.database.Reader('sources/GeoLite2-ASN_20250204/GeoLite2-ASN.mmdb')
+    reader = geoip2.database.Reader('sources/GeoLite2/GeoLite2-ASN.mmdb')
     return reader.asn(ip).to_dict()
 
 def geolookup(ip):
@@ -14,8 +14,8 @@ def geolookup(ip):
         'ip': ip,
         'continent': "",
         'country': "",
-        'subdivision': "",
-        'sub_abbr': "",
+        'state': "",
+        'state_abbr': "",
         'city': "",
         'postal_code': "",
         'asn_id': "",
@@ -35,7 +35,7 @@ def geolookup(ip):
             result['subdivision'] = geocity['subdivisions'][0]['names']['en']
 
         if 'subdivisions' in geocity:
-            result['sub_abbr'] = geocity['subdivisions'][0]['iso_code']
+            result['state_abbr'] = geocity['subdivisions'][0]['iso_code']
 
         if 'city' in geocity:
             result['city'] = geocity['city']['names']['en']
