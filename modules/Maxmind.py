@@ -32,7 +32,7 @@ def geolookup(ip):
             result['country'] = geocity['country']['names']['en']
 
         if 'subdivisions' in geocity:
-            result['subdivision'] = geocity['subdivisions'][0]['names']['en']
+            result['state'] = geocity['subdivisions'][0]['names']['en']
 
         if 'subdivisions' in geocity:
             result['state_abbr'] = geocity['subdivisions'][0]['iso_code']
